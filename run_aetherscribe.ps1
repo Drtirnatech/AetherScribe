@@ -5,8 +5,29 @@ $ErrorActionPreference = "Stop"
 
 Write-Host "--- AetherScribe Automation Suite ---" -ForegroundColor Cyan
 
+# 0. Conda Path Discovery
+$condaExe = "conda"
+if (!(Get-Command $condaExe -ErrorAction SilentlyContinue)) {
+    $commonPaths = @(
+        "$env:USERPROFILE\anaconda3\Scripts\conda.exe",
+        "$env:USERPROFILE\miniconda3\Scripts\conda.exe",
+        "C:\ProgramData\anaconda3\Scripts\conda.exe"
+    )
+    foreach ($path in $commonPaths) {
+        if (Test-Path $path) {
+            $condaExe = $path
+            break
+        }
+    }
+}
+
+if (!(Get-Command $condaExe -ErrorAction SilentlyContinue) -and ($condaExe -eq "conda")) {
+    Write-Error "Conda was not found in PATH or common locations. Please ensure Anaconda/Miniconda is installed."
+    exit
+}
+
 # 1. Environment Check/Setup
-if (!(conda env list | Select-String "aetherscribe")) {
+if (!(& $condaExe env list | Select-String "aetherscribe")) {
     Write-Host "[1/3] Environment 'aetherscribe' not found. Running setup..." -ForegroundColor Yellow
     powershell.exe -File ./setup_env.ps1
 } else {
@@ -15,7 +36,7 @@ if (!(conda env list | Select-String "aetherscribe")) {
 
 # 2. Validation
 Write-Host "[2/3] Validating CUDA and Dependencies..." -ForegroundColor Cyan
-$cudaCheck = conda run -n aetherscribe python -c "import torch; print(torch.cuda.is_available())"
+$cudaCheck = & $condaExe run -n aetherscribe python -c "import torch; print(torch.cuda.is_available())"
 if ($cudaCheck -eq "True") {
     Write-Host "CUDA is AVAILABLE. RTX A6000 Ada optimization active." -ForegroundColor Green
 } else {
@@ -35,7 +56,10 @@ if (!(Test-Path "frontend/node_modules")) {
 
 # Start Backend in a new window
 Write-Host "Starting FastAPI Backend on port 8000..." -ForegroundColor Green
-Start-Process powershell.exe -ArgumentList "-NoExit", "-Command", "conda activate aetherscribe; python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000"
+$condaRoot = Split-Path (Split-Path $condaExe -Parent) -Parent
+$condaHook = Join-Path $condaRoot "etc\profile.d\conda.ps1"
+$launchCmd = "if (Test-Path '$condaHook') { . '$condaHook' }; conda activate aetherscribe; python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000"
+Start-Process powershell.exe -ArgumentList "-NoExit", "-Command", $launchCmd
 
 # Start Frontend in a new window
 Write-Host "Starting Vite Frontend on port 5173..." -ForegroundColor Green
