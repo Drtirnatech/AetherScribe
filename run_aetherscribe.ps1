@@ -58,7 +58,8 @@ if (!(Test-Path "frontend/node_modules/vite")) {
 Write-Host "Starting FastAPI Backend on port 8000..." -ForegroundColor Green
 $condaRoot = Split-Path (Split-Path $condaExe -Parent) -Parent
 $condaHook = Join-Path $condaRoot "etc\profile.d\conda.ps1"
-$launchCmd = "if (Test-Path '$condaHook') { . '$condaHook' }; conda activate aetherscribe; python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000"
+# Ensure the sub-shell also knows where conda is by using the full path for activation if needed
+$launchCmd = "if (Test-Path '$condaHook') { . '$condaHook' }; & '$condaExe' activate aetherscribe; python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000"
 Start-Process powershell.exe -ArgumentList "-NoExit", "-Command", $launchCmd
 
 # Start Frontend in a new window
