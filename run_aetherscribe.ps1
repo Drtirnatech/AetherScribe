@@ -46,9 +46,9 @@ if ($cudaCheck -eq "True") {
 # 3. Launching Application
 Write-Host "[3/3] Launching Backend and Frontend..." -ForegroundColor Cyan
 
-# Check if node_modules exists
-if (!(Test-Path "frontend/node_modules")) {
-    Write-Host "Installing frontend dependencies..." -ForegroundColor Yellow
+# Check if vite is installed in node_modules
+if (!(Test-Path "frontend/node_modules/vite")) {
+    Write-Host "Vite or dependencies missing. Installing frontend dependencies..." -ForegroundColor Yellow
     cd frontend
     npm install
     cd ..
