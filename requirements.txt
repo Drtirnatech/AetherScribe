@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+whisperx
+pyannote.audio
+pynvml
+sqlalchemy
+aiosqlite
+python-multipart
